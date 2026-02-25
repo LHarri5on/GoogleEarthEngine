@@ -1,0 +1,77 @@
+
+var dataset = ee.ImageCollection('UCSB/CHC/CMIP6/v1')
+                  .filter(ee.Filter.eq('scenario', 'SSP245'))
+                  .filter(ee.Filter.eq('projection_year', 2030))
+                  .filter(ee.Filter.date('2016-01-01', '2016-01-02'));
+
+print(dataset)
+
+var RH = dataset.select('RHx').first(); // Now it's an ee.Image
+var vpd = dataset.select('vpd').first(); // Now it's an ee.Image
+var heatIndex = dataset.select('Tmax').first(); // Now it's an ee.Image
+
+//Convert from Celsius to Fahrenheit
+var HI = heatIndex
+  .multiply(9/5)
+  .add(32)
+  .rename('HI');
+
+// var visParams = {
+//   min: 0,
+//   max: 40,
+//   palette: ['darkblue', 'blue', 'cyan', 'green', 'yellow', 'orange', 'red','darkred'],
+// };
+// Map.setCenter(-104.28, 46.07, 3);
+// Map.addLayer(HI, visParams, 'Projected');
+
+// observed
+var dataset = ee.ImageCollection('UCSB-CHG/CHIRTS/DAILY')
+                  .filter(ee.Filter.date('2016-01-01', '2016-01-02'));
+                  print(dataset)
+                  
+var HI0 = dataset.select('maximum_temperature').first();
+var RH0 = dataset.select('relative_humidity').first();
+var vpd0 = dataset.select('vapor_pressure_deficit').first();
+
+//Convert from Celsius to Fahrenheit
+var HI0 = HI0
+  .multiply(9/5)
+  .add(32)
+  .rename('HI0');
+
+var visParams = {
+  min: 60,
+  max: 100,
+  palette: ['darkblue', 'blue', 'cyan', 'green', 'yellow', 'orange', 'red','darkred'],
+};
+Map.setCenter(-104.28, 46.07, 3);
+Map.addLayer(HI0, visParams, 'Observed');
+
+
+// Create two maps
+var leftMap = ui.Map();
+var rightMap = ui.Map();
+
+// Center both maps on the same location
+var center = ee.Geometry.Point([-95, 40]);
+leftMap.setCenter(-95, 40, 4);
+rightMap.setCenter(-95, 40, 4);
+
+// Add layers to each map
+leftMap.addLayer(vpd0, {min:0, max:5, palette:['darkblue', 'blue', 'cyan', 'green', 'yellow', 'orange', 'red','darkred']}, 'Observed Heat Index (°F)');
+rightMap.addLayer(vpd, {min:0, max:5, palette:['darkblue', 'blue', 'cyan', 'green', 'yellow', 'orange', 'red','darkred']}, 'Projected Heat Index (°F)');
+
+// Link the two maps (pan/zoom synchronizes)
+var linker = ui.Map.Linker([leftMap, rightMap]);
+
+// Create a split panel with the two maps side by side
+var splitPanel = ui.SplitPanel({
+  firstPanel: leftMap,
+  secondPanel: rightMap,
+  orientation: 'horizontal',
+  wipe: true
+});
+
+// Add the split panel to the root UI
+ui.root.clear();
+ui.root.add(splitPanel);
